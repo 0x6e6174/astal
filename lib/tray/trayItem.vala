@@ -122,7 +122,11 @@ public class TrayItem : Object {
     * If set, this only supports the menu, so showing the menu should be prefered
     * over calling [method@AstalTray.TrayItem.activate].
     */
-    public bool is_menu { get { return proxy.ItemIsMenu ;} }
+    public bool is_menu {
+        get {
+            return proxy.ItemIsMenu || proxy.get_cached_property("ItemIsMenu") == null;
+        }
+    }
 
     /**
     * The icon theme path, where to look for the [property@AstalTray.TrayItem:icon-name].
@@ -205,6 +209,8 @@ public class TrayItem : Object {
                 path
             );
 
+            proxy.g_default_timeout = 1000;
+
             connection_ids.append(proxy.NewStatus.connect(refresh_all_properties));
             connection_ids.append(proxy.NewToolTip.connect(refresh_all_properties));
             connection_ids.append(proxy.NewTitle.connect(refresh_all_properties));
@@ -217,7 +223,8 @@ public class TrayItem : Object {
                 }
             });
 
-            if (proxy.Menu != null) {
+            Variant? menuVariant = proxy.get_cached_property("Menu");
+            if (proxy.Menu != null && menuVariant != null && menuVariant.is_of_type(VariantType.OBJECT_PATH)) { 
                 this.menu_importer = new DBusMenu.Importer(proxy.get_name_owner(), proxy.Menu);
                 this.menu_importer.notify["model"].connect(() => {
                     notify_property("menu-model");
